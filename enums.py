@@ -10,10 +10,8 @@ class PR(Enum):
 
 
 class SF(Enum):
-    (#DEF, SET,
-        QUOTE, TYPEOF, CONS, CAR, CDR, IF, PRINT, READ,
-     # EVAL, EVALIN, LAMBDA, MACRO,
-        SYMBOL, DO) = range(10)
+    # DEF, SET, EVALIN, LAMBDA, MACRO
+    (QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO) = range(11)
 
 
 ValuesToString = {
@@ -35,7 +33,8 @@ ValuesToString = {
     SF.CONS: "cons",
     SF.CAR: "car",
     SF.CDR: "cdr",
-    SF.IF: "if",
+    SF.COND: "cond",
+    SF.EVAL: "eval",
     SF.PRINT: "print",
     SF.READ: "read",
     SF.SYMBOL: "symbol",

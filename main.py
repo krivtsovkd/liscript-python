@@ -3,7 +3,6 @@ import repl
 
 def main():
     while True:
-        print(">>> ", end="")
         cmd = repl.read()
         try:
             _ = repl.evaluate(cmd)

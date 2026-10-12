@@ -13,6 +13,7 @@ def show_ast(ast):
     elif type(ast) is str:
         return '"' + ast + '"'
     elif lst.is_cons_list(ast):
+        # TODO use " ".join(out)
         out = "("
         while not lst.is_nil(ast):
             out += show_ast(lst.car(ast)) + " "

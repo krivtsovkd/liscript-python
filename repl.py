@@ -5,7 +5,7 @@ import readline
 
 
 def read():
-    cmd = input()
+    cmd = input(">>> ")
 
     if len(cmd) == 0 or cmd[0] != ':':
         return cmd
