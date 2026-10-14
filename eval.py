@@ -1,10 +1,14 @@
-# домашка поиграть поискать ошибки, красивые ошибки
+# important !!! (def a 1 b (+ 1 a)) must work in ocaml
+# TODO read-number (in the lisp ? in the future)
 import lst
 import enums
 import ast
 import symbol
 import settings
 import parser
+from env import Env
+
+env = Env()
 
 
 def repr(x):
@@ -61,23 +65,25 @@ def fold_pr(pr, values):
     return True
 
 
-# TODO description
 def get_args(values, count, desc):
     out = []
     for _ in range(count):
         if lst.is_nil(values):
-            raise ValueError("expected " + str(count) + " arguments, got " + str(len(out)))
+            raise ValueError("expected " + str(count) + " arguments, got " + str(len(out)) + " in:\n" + desc)
 
         out.append(lst.car(values))
         values = lst.cdr(values)
 
     if not lst.is_nil(values):
-        raise ValueError("expected " + str(count) + " arguments, got too many")
+        raise ValueError("expected " + str(count) + " arguments, got too many in:\n" + desc)
 
     return out
 
 
 def eval(value):
+    if symbol.is_symbol(value):
+        return env.get(value)
+
     if not lst.is_cons_list(value):
         return value
 
@@ -94,10 +100,10 @@ def eval(value):
         tail = lst.cdr(value)
 
         if head == enums.SF.QUOTE:
-            return get_args(tail, 1)[0]
+            return get_args(tail, 1, repr(value))[0]
 
         elif head == enums.SF.TYPEOF:
-            arg = eval(get_args(tail, 1)[0])
+            arg = eval(get_args(tail, 1, repr(value))[0])
 
             if lst.is_cons_list(arg):
                 return "list"
@@ -107,64 +113,64 @@ def eval(value):
                 return type(arg).__name__
 
         elif head == enums.SF.CONS:
-            args = list(map(eval, get_args(tail, 2)))
+            args = list(map(eval, get_args(tail, 2, repr(value))))
 
             if not lst.is_cons_list(args[1]):
-                raise ValueError("expected cons list, got " + ast.show_ast(args[1]))
+                raise ValueError("expected cons list, got " + ast.show_ast(args[1]) + " in:\n" + ast.show_ast(value))
 
             return lst.cons(args[0], args[1])
 
         elif head == enums.SF.CAR:
-            arg = eval(get_args(tail, 1)[0])
+            arg = eval(get_args(tail, 1, repr(value))[0])
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
                     return arg
                 else:
-                    raise ValueError("expected cons list, got " + ast.show_ast(value))
+                    raise ValueError("expected cons list, got " + ast.show_ast(arg) + " in:\n" + ast.show_ast(value))
             elif lst.is_nil(arg):
-                raise ValueError("expected nonempty list in: " + ast.show_ast(value))
+                raise ValueError("expected nonempty list in:\n" + ast.show_ast(value))
 
             return lst.car(arg)
 
         elif head == enums.SF.CDR:
-            arg = eval(get_args(tail, 1)[0])
+            arg = eval(get_args(tail, 1, repr(value))[0])
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
                     return lst.nil
                 else:
-                    raise ValueError("expected cons list, got " + ast.show_ast(arg))
+                    raise ValueError("expected cons list, got " + ast.show_ast(arg) + " in:\n" + ast.show_ast(value))
             elif lst.is_nil(arg):
-                raise ValueError("expected nonempty list in: " + ast.show_ast(value))
+                raise ValueError("expected nonempty list in:\n" + ast.show_ast(value))
 
             return lst.cdr(arg)
 
         elif head == enums.SF.COND:
             # TODO maybe raise if 1 argument
             while not lst.is_nil(tail):
-                condition_or_value = eval(lst.car(tail))
+                var_sym = eval(lst.car(tail))
                 tail = lst.cdr(tail)
 
                 if lst.is_nil(tail):
-                    return condition_or_value
+                    return var_sym
 
-                if not isinstance(condition_or_value, bool):
-                    raise ValueError("expected bool TODO")
+                if not isinstance(var_sym, bool):
+                    raise ValueError("expected bool, got " + ast.show_ast(var_sym) + " in:\n" + ast.show_ast(value))
 
-                if condition_or_value:
+                if var_sym:
                     return eval(lst.car(tail))
                 else:
                     tail = lst.cdr(tail)
 
-            raise ValueError("TODO")
+            raise ValueError("none of the conditions are true in\n" + ast.show_ast(value))
 
         elif head == enums.SF.EVAL:
-            arg = eval(get_args(tail, 1)[0])
+            arg = eval(get_args(tail, 1, repr(value))[0])
             return eval(arg)
 
         elif head == enums.SF.SYMBOL:
-            arg = eval(get_args(tail, 1)[0])
+            arg = eval(get_args(tail, 1, repr(value))[0])
             return symbol.symbol(repr(arg))
 
         elif head == enums.SF.DO:
@@ -193,9 +199,41 @@ def eval(value):
                 out.append(repr(eval(lst.car(tail))))
                 tail = lst.cdr(tail)
 
-            user_input = input(" ".join(out))
+            user_input = input(" ".join(out) + "\n")
             x, y = parser.parse(user_input)
             return x
+
+        elif head == enums.SF.DEF:
+            while not lst.is_nil(tail):
+                var_sym = lst.car(tail)
+                if not symbol.is_symbol(var_sym):
+                    raise ValueError("TODO def not sym")
+                tail = lst.cdr(tail)
+
+                if lst.is_nil(tail):
+                    raise ValueError("TODO no def value")
+
+                env.define(var_sym, eval(lst.car(tail)))
+
+                tail = lst.cdr(tail)
+
+            return lst.nil
+
+        elif head == enums.SF.SET:
+            while not lst.is_nil(tail):
+                var_sym = lst.car(tail)
+                if not symbol.is_symbol(var_sym):
+                    raise ValueError("TODO def not sym")
+                tail = lst.cdr(tail)
+
+                if lst.is_nil(tail):
+                    raise ValueError("TODO no def value")
+
+                env.set(var_sym, eval(lst.car(tail)))
+
+                tail = lst.cdr(tail)
+
+            return lst.nil
 
     else:
         raise ValueError("head not callable: " + ast.show_ast(value))

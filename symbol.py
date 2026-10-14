@@ -6,5 +6,5 @@ def symbol(name):
     return "\x00" + name
 
 
-def symbol_name(sym):
+def name(sym):
     return sym[1:]

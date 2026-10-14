@@ -9,7 +9,7 @@ def show_ast(ast):
     elif ast in enums.ValuesToString:
         return enums.ValuesToString[ast]
     elif symbol.is_symbol(ast):
-        return str(symbol.symbol_name(ast))
+        return str(symbol.name(ast))
     elif type(ast) is str:
         return '"' + ast + '"'
     elif lst.is_cons_list(ast):
@@ -37,6 +37,6 @@ def equal(a, b):
 
         return equal(lst.car(a), lst.car(b)) and equal(lst.cdr(a), lst.cdr(b))
     elif symbol.is_symbol(a) and symbol.is_symbol(b):
-        return symbol.symbol_name(a) == symbol.symbol_name(b)
+        return symbol.name(a) == symbol.name(b)
     else:
         return False if not (type(a) is type(b)) else a == b

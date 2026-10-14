@@ -10,8 +10,8 @@ class PR(Enum):
 
 
 class SF(Enum):
-    # DEF, SET, EVALIN, LAMBDA, MACRO
-    (QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO) = range(11)
+    # EVALIN, LAMBDA, MACRO
+    (DEF, SET, QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO) = range(13)
 
 
 ValuesToString = {
@@ -28,6 +28,8 @@ ValuesToString = {
     PR.Gte: ">=",
     PR.Lte: "<=",
 
+    SF.DEF: "def",
+    SF.SET: "set!",
     SF.QUOTE: "quote",
     SF.TYPEOF: "typeof",
     SF.CONS: "cons",

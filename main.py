@@ -3,9 +3,9 @@ import repl
 
 def main():
     while True:
-        cmd = repl.read()
+        cmd, is_file = repl.read()
         try:
-            _ = repl.evaluate(cmd)
+            _ = repl.evaluate(cmd, is_file)
         except Exception as e:
             print(e)
 

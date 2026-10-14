@@ -8,24 +8,33 @@ def read():
     cmd = input(">>> ")
 
     if len(cmd) == 0 or cmd[0] != ':':
-        return cmd
+        return cmd, False
 
     if cmd[1] == 'l':
         filename = cmd[3:]
         try:
             with open(filename, "r") as file:
-                return file.read()
+                return file.read(), True
         except FileNotFoundError:
-            return f"file not found: {filename}"
+            return f"file not found: {filename}", False
 
-    return "command not found"
+    return "command not found", False
 
 
-def evaluate(text):
+def evaluate(text, is_file):
     text = parser.strip_left(text)
+    out = None
 
     while text:
         x, text = parser.parse(text)
-        x = eval.eval(x)
-        if not (x is None):
-            print(ast.show_ast(x))
+        text = parser.strip_left(text)
+        try:
+            x = eval.eval(x)
+            out = ast.show_ast(x)
+            if not is_file:
+                print(out)
+        except Exception as e:
+            print("Error: ", e)
+
+    if is_file and not (out is None):
+        print(out)
