@@ -2,6 +2,9 @@ import parser
 import ast
 import eval
 import readline
+from env import Env
+
+env = Env(None)
 
 
 def read():
@@ -29,7 +32,7 @@ def evaluate(text, is_file):
         x, text = parser.parse(text)
         text = parser.strip_left(text)
         try:
-            x = eval.eval(x)
+            x = eval.eval(x, env)
             out = ast.show_ast(x)
             if not is_file:
                 print(out)
