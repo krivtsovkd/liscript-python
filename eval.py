@@ -1,6 +1,3 @@
-# important !!! (def a 1 b (+ 1 a)) must work in ocaml
-# TODO read-number (in the lisp ? in the future)
-# HOMWORK load stdlib on start
 import lst
 import enums
 import ast
@@ -8,7 +5,7 @@ import symbol
 import settings
 import parser
 import ldambda
-import env
+import env as environ
 
 REST_ARGS = symbol.symbol("rest-args")
 
@@ -82,9 +79,9 @@ def get_args(values, count, desc):
     return out
 
 
-def eval(value, e):
+def eval(value, env):
     if symbol.is_symbol(value):
-        return e.get(value)
+        return env.get(value)
 
     if not lst.is_cons_list(value):
         return value
@@ -92,20 +89,20 @@ def eval(value, e):
     if lst.is_nil(value):
         return value
 
-    head = eval(lst.car(value), e)
+    head = eval(lst.car(value), env)
 
     if isinstance(head, enums.OP):
-        return fold_op(head, lst.cdr(value), e)
+        return fold_op(head, lst.cdr(value), env)
     elif isinstance(head, enums.PR):
-        return fold_pr(head, lst.cdr(value), e)
+        return fold_pr(head, lst.cdr(value), env)
     elif isinstance(head, enums.SF):
-        passed_values = lst.cdr(value)
+        tail = lst.cdr(value)
 
         if head == enums.SF.QUOTE:
-            return get_args(passed_values, 1, repr(value))[0]
+            return get_args(tail, 1, repr(value))[0]
 
         elif head == enums.SF.TYPEOF:
-            arg = eval(get_args(passed_values, 1, repr(value))[0], e)
+            arg = eval(get_args(tail, 1, repr(value))[0], env)
 
             if lst.is_cons_list(arg):
                 return "list"
@@ -115,9 +112,9 @@ def eval(value, e):
                 return type(arg).__name__
 
         elif head == enums.SF.CONS:
-            lambda_args = get_args(passed_values, 2, repr(value))
-            lambda_args[0] = eval(lambda_args[0], e)
-            lambda_args[1] = eval(lambda_args[1], e)
+            lambda_args = get_args(tail, 2, repr(value))
+            lambda_args[0] = eval(lambda_args[0], env)
+            lambda_args[1] = eval(lambda_args[1], env)
 
             if not lst.is_cons_list(lambda_args[1]):
                 raise ValueError("expected cons list, got " + ast.show_ast(lambda_args[1]) + " in:\n" + ast.show_ast(value))
@@ -125,7 +122,7 @@ def eval(value, e):
             return lst.cons(lambda_args[0], lambda_args[1])
 
         elif head == enums.SF.CAR:
-            arg = eval(get_args(passed_values, 1, repr(value))[0], e)
+            arg = eval(get_args(tail, 1, repr(value))[0], env)
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
@@ -138,7 +135,7 @@ def eval(value, e):
             return lst.car(arg)
 
         elif head == enums.SF.CDR:
-            arg = eval(get_args(passed_values, 1, repr(value))[0], e)
+            arg = eval(get_args(tail, 1, repr(value))[0], env)
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
@@ -152,46 +149,46 @@ def eval(value, e):
 
         elif head == enums.SF.COND:
             # TODO maybe raise if 1 argument
-            while not lst.is_nil(passed_values):
-                var_sym = eval(lst.car(passed_values), e)
-                passed_values = lst.cdr(passed_values)
+            while not lst.is_nil(tail):
+                var_sym = eval(lst.car(tail), env)
+                tail = lst.cdr(tail)
 
-                if lst.is_nil(passed_values):
+                if lst.is_nil(tail):
                     return var_sym
 
                 if not isinstance(var_sym, bool):
                     raise ValueError("expected bool, got " + ast.show_ast(var_sym) + " in:\n" + ast.show_ast(value))
 
                 if var_sym:
-                    return eval(lst.car(passed_values), e)
+                    return eval(lst.car(tail), env)
                 else:
-                    passed_values = lst.cdr(passed_values)
+                    tail = lst.cdr(tail)
 
             raise ValueError("none of the conditions are true in\n" + ast.show_ast(value))
 
         elif head == enums.SF.EVAL:
-            arg = eval(get_args(passed_values, 1, repr(value))[0], e)
-            return eval(arg, e)
+            arg = eval(get_args(tail, 1, repr(value))[0], env)
+            return eval(arg, env)
 
         elif head == enums.SF.SYMBOL:
-            arg = eval(get_args(passed_values, 1, repr(value))[0], e)
-            return symbol.symbol(repr(arg), e)
+            arg = eval(get_args(tail, 1, repr(value))[0], env)
+            return symbol.symbol(repr(arg), env)
 
         elif head == enums.SF.DO:
             out = lst.nil
 
-            while not lst.is_nil(passed_values):
-                out = eval(lst.car(passed_values), e)
-                passed_values = lst.cdr(passed_values)
+            while not lst.is_nil(tail):
+                out = eval(lst.car(tail), env)
+                tail = lst.cdr(tail)
 
             return out
 
         elif head == enums.SF.PRINT:
             out = []
 
-            while not lst.is_nil(passed_values):
-                out.append(repr(eval(lst.car(passed_values), e)))
-                passed_values = lst.cdr(passed_values)
+            while not lst.is_nil(tail):
+                out.append(repr(eval(lst.car(tail), env)))
+                tail = lst.cdr(tail)
 
             print(" ".join(out))
             return lst.nil
@@ -199,76 +196,76 @@ def eval(value, e):
         elif head == enums.SF.READ:
             out = []
 
-            while not lst.is_nil(passed_values):
-                out.append(repr(eval(lst.car(passed_values), e)))
-                passed_values = lst.cdr(passed_values)
+            while not lst.is_nil(tail):
+                out.append(repr(eval(lst.car(tail), env)))
+                tail = lst.cdr(tail)
 
             user_input = input(" ".join(out) + "\n")
             x, y = parser.parse(user_input)
             return x
 
         elif head == enums.SF.DEF:
-            while not lst.is_nil(passed_values):
-                var_sym = lst.car(passed_values)
+            while not lst.is_nil(tail):
+                var_sym = lst.car(tail)
                 if not symbol.is_symbol(var_sym):
-                    raise ValueError("TODO def not sym")
-                passed_values = lst.cdr(passed_values)
+                    raise ValueError("expected symbol, got " + ast.show_ast(var_sym) + " in:\n" + ast.show_ast(value))
+                tail = lst.cdr(tail)
 
-                if lst.is_nil(passed_values):
-                    raise ValueError("TODO no def value")
+                if lst.is_nil(tail):
+                    raise ValueError("expected even number of arguments to def:\n" + ast.show_ast(value))
 
-                e.define(var_sym, eval(lst.car(passed_values), e))
+                env.define(var_sym, eval(lst.car(tail), env))
 
-                passed_values = lst.cdr(passed_values)
+                tail = lst.cdr(tail)
 
             return lst.nil
 
         elif head == enums.SF.SET:
-            while not lst.is_nil(passed_values):
-                var_sym = lst.car(passed_values)
+            while not lst.is_nil(tail):
+                var_sym = lst.car(tail)
                 if not symbol.is_symbol(var_sym):
-                    raise ValueError("TODO def not sym")
-                passed_values = lst.cdr(passed_values)
+                    raise ValueError("expected symbol, got " + ast.show_ast(var_sym) + " in:\n" + ast.show_ast(value))
+                tail = lst.cdr(tail)
 
-                if lst.is_nil(passed_values):
-                    raise ValueError("TODO no def value")
+                if lst.is_nil(tail):
+                    raise ValueError("expected even number of arguments to set:\n" + ast.show_ast(value))
 
-                e.set(var_sym, eval(lst.car(passed_values), e))
+                env.set(var_sym, eval(lst.car(tail), env))
 
-                passed_values = lst.cdr(passed_values)
+                tail = lst.cdr(tail)
 
             return lst.nil
 
         elif head == enums.SF.LAMBDA:
-            lambda_args = get_args(passed_values, 2, repr(value))
+            lambda_args = get_args(tail, 2, repr(value))
             # TODO check that args are symbols
             if not lst.is_cons_list(lambda_args[0]):
-                raise ValueError("TODO expected cons list")
+                raise ValueError("Expected cons list, got " + ast.show_ast(lambda_args[0]) + " in:\n" + ast.show_ast(value))
 
-            return ldambda.Lambda(lambda_args[0], lambda_args[1], e)
+            return ldambda.Lambda(lambda_args[0], lambda_args[1], env)
 
         elif head == enums.SF.DAMBDA:
-            lambda_args = get_args(passed_values, 2, repr(value))
+            lambda_args = get_args(tail, 2, repr(value))
             # TODO check that args are symbols
             if not lst.is_cons_list(lambda_args[0]):
-                raise ValueError("TODO expected cons list")
+                raise ValueError("Expected cons list, got " + ast.show_ast(lambda_args[0]) + " in:\n" + ast.show_ast(value))
 
             return ldambda.Dambda(lambda_args[0], lambda_args[1])
 
     elif isinstance(head, ldambda.Lambda):
-        new_env = env.Env(head.env)
-        passed_values = lst.cdr(value)
+        new_env = environ.Env(head.env)
+        tail = lst.cdr(value)
         lambda_args = head.args
         while True:
-            if lst.is_nil(lambda_args) and lst.is_nil(passed_values):
+            if lst.is_nil(lambda_args) and lst.is_nil(tail):
                 return eval(head.body, new_env)
-            if lst.is_nil(passed_values):
+            if lst.is_nil(tail):
                 return ldambda.Lambda(lambda_args, head.body, new_env)
             if lst.is_nil(lambda_args):
                 out = []
-                while not lst.is_nil(passed_values):
-                    out.append(eval(lst.car(passed_values), e))
-                    passed_values = lst.cdr(passed_values)
+                while not lst.is_nil(tail):
+                    out.append(eval(lst.car(tail), env))
+                    tail = lst.cdr(tail)
 
                 cons_out = lst.nil
                 for elem in out[::-1]:
@@ -276,27 +273,27 @@ def eval(value, e):
                 new_env.define(REST_ARGS, cons_out)
                 return eval(head.body, new_env)
 
-            arg = eval(lst.car(passed_values), e)
+            arg = eval(lst.car(tail), env)
             sym = lst.car(lambda_args)
 
             new_env.define(sym, arg)
 
-            passed_values = lst.cdr(passed_values)
+            tail = lst.cdr(tail)
             lambda_args = lst.cdr(lambda_args)
 
     elif isinstance(head, ldambda.Dambda):
-        new_env = env.Env(e)
+        new_env = environ.Env(env)
         passed_values = lst.cdr(value)
         lambda_args = head.args
         while True:
             if lst.is_nil(lambda_args) and lst.is_nil(passed_values):
                 return eval(head.body, new_env)
             if lst.is_nil(passed_values):
-                return ldambda.Lambda(lambda_args, head.body)
+                return ldambda.Dambda(lambda_args, head.body)
             if lst.is_nil(lambda_args):
                 out = []
                 while not lst.is_nil(passed_values):
-                    out.append(eval(lst.car(passed_values), e))
+                    out.append(eval(lst.car(passed_values), env))
                     passed_values = lst.cdr(passed_values)
 
                 cons_out = lst.nil
@@ -305,7 +302,7 @@ def eval(value, e):
                 new_env.define(REST_ARGS, cons_out)
                 return eval(head.body, new_env)
 
-            arg = eval(lst.car(passed_values), e)
+            arg = eval(lst.car(passed_values), env)
             sym = lst.car(lambda_args)
 
             new_env.define(sym, arg)

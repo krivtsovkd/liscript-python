@@ -1,6 +1,5 @@
 import symbol
 from settings import settings
-# TODO errors
 
 
 class Env:
@@ -24,14 +23,6 @@ class Env:
             return sym
         else:
             raise ValueError("Uninitialized variable: " + symbol.name(sym))
-
-        # if settings.auto_quoting:
-        #     return self.values.get(symbol.name(sym), sym)
-        # else:
-        #     if symbol.name(sym) in self.values:
-        #         return self.values[symbol.name(sym)]
-        #     else:
-        #         raise ValueError("Uninitialized variable: " + symbol.name(sym))
 
     # TODO setting
     def set(self, sym, val):
