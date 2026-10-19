@@ -10,8 +10,8 @@ class PR(Enum):
 
 
 class SF(Enum):
-    # EVALIN, MACRO
-    (DEF, SET, QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO, LAMBDA, DAMBDA) = range(15)
+    # EVALIN
+    (DEF, SET, QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO, LAMBDA, DAMBDA, MACRO) = range(16)
 
 
 ValuesToString = {
@@ -43,6 +43,7 @@ ValuesToString = {
     SF.DO: "do",
     SF.LAMBDA: "lambda",
     SF.DAMBDA: "dambda",
+    SF.MACRO: "macro",
 }
 
 StringToValue = dict(zip(ValuesToString.values(), ValuesToString.keys()))

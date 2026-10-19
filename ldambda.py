@@ -9,3 +9,9 @@ class Dambda:
     def __init__(self, args, body):
         self.args = args
         self.body = body
+
+
+class Macro:
+    def __init__(self, args, body):
+        self.args = args
+        self.body = body

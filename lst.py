@@ -46,12 +46,20 @@ def cons(car, cdr):
     return lambda f: f(car, cdr)
 
 
+def fst(x, y):
+    return x
+
+
+def snd(x, y):
+    return y
+
+
 def car(list):
-    return list(lambda x, y: x)
+    return list(fst)
 
 
 def cdr(list):
-    return list(lambda x, y: y)
+    return list(snd)
 
 
 nil = cons(None, None)
