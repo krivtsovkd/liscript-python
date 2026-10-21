@@ -1,3 +1,4 @@
+import time
 import lst
 import enums
 import ast
@@ -278,6 +279,9 @@ def eval(value, env):
 
         elif head == enums.SF.PYTHON:
             return True
+
+        elif head == enums.SF.CURTIME:
+            return time.time()
 
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
