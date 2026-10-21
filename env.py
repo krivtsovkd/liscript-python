@@ -33,8 +33,12 @@ class Env:
                 return
             cur = cur.parent
 
-        raise ValueError("Undefined symbol")
+        raise ValueError("Undefined symbol: " + symbol.name(sym))
 
         # if settings.immutable_mode and symbol.name(sym) in self.values:
         #     raise ValueError("Cant mutate value: " + symbol.name(sym))
         # self.values[symbol.name(sym)] = val
+
+
+env = Env(None)
+macro_env = Env(None)

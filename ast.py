@@ -29,8 +29,8 @@ def show_ast(ast):
         return f"({enums.ValuesToString[enums.SF.LAMBDA]} {show_ast(ast.args)} {show_ast(ast.body)})"
     elif isinstance(ast, ldambda.Dambda):
         return f"({enums.ValuesToString[enums.SF.DAMBDA]} {show_ast(ast.args)} {show_ast(ast.body)})"
-    elif isinstance(ast, ldambda.Macro):
-        return f"({enums.ValuesToString[enums.SF.MACRO]} {show_ast(ast.args)} {show_ast(ast.body)})"
+    elif isinstance(ast, ldambda.Racro):
+        return f"({enums.ValuesToString[enums.SF.RACRO]} {show_ast(ast.args)} {show_ast(ast.body)})"
 
     return str(ast)
 

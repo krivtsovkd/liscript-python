@@ -2,6 +2,7 @@ import parser
 import ast
 import eval
 import readline
+import env
 
 
 def read_file(filename):
@@ -25,7 +26,7 @@ def read(env):
     return "command not found", False
 
 
-def evaluate(text, env, is_file):
+def evaluate(text, e, is_file):
     text = parser.strip_left(text)
     out = None
 
@@ -33,12 +34,16 @@ def evaluate(text, env, is_file):
         try:
             x, text = parser.parse(text)
             text = parser.strip_left(text)
-            x = eval.eval(x, env)
+
+            x = eval.macroexpand(x)
+            print("macroexpand:")
+            print(ast.show_ast(x))
+            x = eval.eval(x, env.env)
             out = ast.show_ast(x)
             if not is_file:
                 print(out)
-        except ValueError as e:
-            print("Error: ", e)
+        except ValueError as err:
+            print("Error:", err)
 
     if is_file and not (out is None):
         print(out)

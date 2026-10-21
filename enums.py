@@ -11,7 +11,7 @@ class PR(Enum):
 
 class SF(Enum):
     # EVALIN
-    (DEF, SET, QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO, LAMBDA, DAMBDA, MACRO, PANIC, PYTHON, CURTIME) = range(19)
+    (DEF, SET, QUOTE, TYPEOF, CONS, CAR, CDR, COND, PRINT, READ, EVAL, SYMBOL, DO, LAMBDA, DAMBDA, RACRO, PANIC, PYTHON, CURTIME, DEFMACRO, MACROEXPAND) = range(21)
 
 
 ValuesToString = {
@@ -43,10 +43,12 @@ ValuesToString = {
     SF.DO: "do",
     SF.LAMBDA: "lambda",
     SF.DAMBDA: "dambda",
-    SF.MACRO: "macro",
+    SF.RACRO: "racro",
     SF.PANIC: "panic",
     SF.PYTHON: "python?",
     SF.CURTIME: "current-time",
+    SF.DEFMACRO: "defmacro",
+    SF.MACROEXPAND: "macroexpand",
 }
 
 StringToValue = dict(zip(ValuesToString.values(), ValuesToString.keys()))

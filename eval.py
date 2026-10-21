@@ -80,14 +80,14 @@ def get_args(values, count, desc):
     return out
 
 
-def macroexpand(env, value):
+def racroexpand(env, value):
     if symbol.is_symbol(value):
         try:
             return env.get(value)
         except ValueError:
             return value
     elif lst.is_cons_list(value):
-        return lst.nil if lst.is_nil(value) else lst.cons(macroexpand(env, lst.car(value)), macroexpand(env, lst.cdr(value)))
+        return lst.nil if lst.is_nil(value) else lst.cons(racroexpand(env, lst.car(value)), racroexpand(env, lst.cdr(value)))
     else:
         return value
 
@@ -177,7 +177,8 @@ def eval(value, env):
                 else:
                     tail = lst.cdr(tail)
 
-            raise ValueError("none of the conditions are true in\n" + ast.show_ast(value))
+            # raise ValueError("none of the conditions are true in\n" + ast.show_ast(value))
+            return lst.nil
 
         elif head == enums.SF.EVAL:
             arg = eval(get_args(tail, 1, repr(value))[0], env)
@@ -265,13 +266,13 @@ def eval(value, env):
 
             return ldambda.Dambda(dambda_args[0], dambda_args[1])
 
-        elif head == enums.SF.MACRO:
+        elif head == enums.SF.RACRO:
             dambda_args = get_args(tail, 2, repr(value))
             # TODO check that args are symbols
             if not lst.is_cons_list(dambda_args[0]):
                 raise ValueError("Expected cons list, got " + ast.show_ast(dambda_args[0]) + " in:\n" + ast.show_ast(value))
 
-            return ldambda.Macro(dambda_args[0], dambda_args[1])
+            return ldambda.Racro(dambda_args[0], dambda_args[1])
 
         elif head == enums.SF.PANIC:
             arg = eval(get_args(tail, 1, repr(value)), env)
@@ -282,6 +283,16 @@ def eval(value, env):
 
         elif head == enums.SF.CURTIME:
             return time.time()
+
+        elif head == enums.SF.DEFMACRO:
+            args = get_args(tail, 3, repr(value))
+            v = ldambda.Lambda(args[1], args[2], env)
+            environ.macro_env.define(args[0], v)
+
+            return lst.nil
+
+        elif head == enums.SF.MACROEXPAND:
+            return macroexpand(tail)
 
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
@@ -341,23 +352,68 @@ def eval(value, env):
 
         return eval(head.body, new_env)
 
-    elif isinstance(head, ldambda.Macro):
+    elif isinstance(head, ldambda.Racro):
         new_env = environ.Env(None)
         tail = lst.cdr(value)
-        macro_args = head.args
+        racro_args = head.args
         while True:
-            if lst.is_nil(macro_args):
+            if lst.is_nil(racro_args):
                 new_env.define(REST_ARGS, tail)
                 break
             elif lst.is_nil(tail):
-                return ldambda.Macro(macro_args, macroexpand(head.body, new_env))
+                return ldambda.Racro(racro_args, racroexpand(head.body, new_env))
 
-            new_env.define(lst.car(macro_args), lst.car(tail))
+            new_env.define(lst.car(racro_args), lst.car(tail))
 
             tail = lst.cdr(tail)
-            macro_args = lst.cdr(macro_args)
+            racro_args = lst.cdr(racro_args)
 
-        return eval(macroexpand(new_env, head.body), env)
+        return eval(racroexpand(new_env, head.body), env)
 
     else:
-        raise ValueError("head not callable: " + ast.show_ast(value))
+        raise ValueError("head not callable:\n" + ast.show_ast(head) + "\nin:\n" + ast.show_ast(value))
+
+
+def macroexpand(value):
+    # print(ast.show_ast(value))
+    if lst.is_cons_list(value):
+        if lst.is_nil(value):
+            return lst.nil
+        else:
+            l = None
+            h = lst.car(value)
+            if symbol.is_symbol(h):
+                try:
+                    z = environ.macro_env.get(h)
+                    if isinstance(z, ldambda.Lambda):
+                        l = z
+                except Exception:
+                    ...
+
+            if not (l is None):
+                tail = lst.cdr(value)
+                new_env = environ.Env(environ.env)
+                new_env.define(h, l)
+                l.env.define(h, l)
+                # print(ast.show_ast(new_env.get(h)))
+                macro_args = l.args
+                while True:
+                    if lst.is_nil(macro_args):
+                        new_env.define(REST_ARGS, tail)
+                        break
+                    elif lst.is_nil(tail):
+                        raise ValueError("cant partially apply macro TODO")
+
+                    new_env.define(lst.car(macro_args), lst.car(tail))
+
+                    tail = lst.cdr(tail)
+                    macro_args = lst.cdr(macro_args)
+
+                # print("lbody")
+                # print(ast.show_ast(l.body))
+                print(new_env.values.keys())
+                return macroexpand(eval(l.body, new_env))
+            else:
+                return lst.cons(macroexpand(h), macroexpand(lst.cdr(value)))
+    else:
+        return value

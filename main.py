@@ -1,19 +1,20 @@
 import sys
 import repl
-from env import Env
-
-env = Env(None)
+import env
 
 
 def main():
     repl.evaluate(repl.read_file("stdlib/lib.ls")[0], env, True)
 
     if len(sys.argv) > 1:
-        repl.evaluate(repl.read_file(sys.argv[1])[0], env, True)
+        repl.evaluate(repl.read_file(sys.argv[1])[0], env.env, True)
 
     while True:
-        cmd, is_file = repl.read(env)
-        _ = repl.evaluate(cmd, env, is_file)
+        cmd, is_file = repl.read(env.env)
+        # try:
+        _ = repl.evaluate(cmd, env.env, is_file)
+        # except Exception:
+        #     ...
 
 
 if __name__ == "__main__":

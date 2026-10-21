@@ -3,135 +3,167 @@
 (def list (lambda () rest-args))
 (def list? (lambda (l) (= "list" (typeof l))))
 
-(def not (lambda (b) (= false b)))
-(def and (lambda (a b) (cond (= true a b) true false)))
-(def or (lambda (a b) (cond (= false a b) false true)))
-
-(def defmacro (macro (name args body) (def name (macro args body))))
-
-(def defn-core (lambda (name args body)
+(defmacro defn (name args)
   (list def name
     (list lambda args
       (cond
-        (nil? body) nil
-        (nil? (cdr body)) (car body)
-        (cons do body)
-)))))
-(defmacro defn (name args) (eval (defn-core 'name 'args 'rest-args)))
+        (nil? rest-args) nil
+        (nil? (cdr rest-args)) (car rest-args)
+        (cons do rest-args)))))
 
-(defn fix (func) (func func))
+(defmacro += (name n) (list set! name (list + name n)))
 
-(def fix-recursive-body (fix (lambda (self name body start?) (do
+; (defmacro or (z) (list cond z (cdr z)))
+
+(defmacro or-impl (z)
   (cond
-    (nil? body) nil
-    (list? (car body))
-      (cons (self self name (car body) true) (self self name (cdr body) false))
-    (and start? (= name (car body)))
-      (cons name (cons name (self self name (cdr body) false)))
-    (cons (car body) (self self name (cdr body) false))
-)))))
+    (nil? z) false
+    (list cond (car z) true (or-impl (cdr z)))))
 
-(def defnrec-core (lambda (name args body)
-  (list def name
-    (list fix
-      (list lambda args
-        (cond
-          (nil? body) nil
-          (nil? (cdr body)) (car body)
-          (cons do body)
-))))))
-(defmacro defnrec (name args) (eval (defnrec-core 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args true))))
+(defmacro or () (or-impl rest-args))
 
-(defn min (a b) (cond (< a b) a b))
-(defn max (a b) (cond (> a b) a b))
+; (cond a true (cond b true))
 
-(def benchmark (dambda (label f)
-  (do
-    (def benchmark-start-time (current-time))
-    (eval f)
-    (def time-taken-s (- (current-time) benchmark-start-time))
-    (def time-taken-real (cond (>= time-taken-s 1.0) time-taken-s (* time-taken-s 1000.0)))
-    (def time-taken-unit (cond (>= time-taken-s 1.0) "s" "ms"))
-    (print "Benchmark" label "took" time-taken-real time-taken-unit)
-)))
+; (defmacro or (z) (list cond (or-impl z) false))
 
-(defnrec range (from to) (cond (> from to) nil (cons from (range (+ 1 from) to))))
+; (or a b c)
+; (cond a true b true c true false)
 
-(defnrec take (l cnt)
-  (cond
-    (<= cnt 0) nil
-    (nil? l) nil
-    (cons (car l) (take (cdr l) (- cnt 1)))
-))
+; (macroexpand defn f (a b) (+ a b))
+; (macroexpand (defn f (a b) (+ a b)))
 
-(defnrec drop (l cnt)
-  (cond
-    (<= cnt 0) l
-    (nil? l) nil
-    (drop (cdr l) (- cnt 1))
-))
+(def not (lambda (b) (= false b)))
+; (def and (lambda (a b) (= a b true)))
+; (def or (lambda (a b) (not (= a b false))))
 
-(defnrec length (l)
-  (cond
-    (nil? l) 0
-    (+ 1 (length (cdr l)))
-))
+; if (v != NULL and v.get())
+; if (v.get() and v != NULL)
 
-(defnrec contains? (elem l)
-  (cond
-    (nil? l) false
-    (= elem (car l)) true
-    (contains? elem (cdr l))
-))
+; (def defracro (racro (name args body) (def name (racro args body))))
 
-(defnrec iter (f l)
-  (cond
-    (nil? l) nil
-    (do (f (car l)) (iter f (cdr l)))
-))
+; (def defn-core (lambda (name args body)
+;   (list def name
+;     (list lambda args
+;       (cond
+;         (nil? body) nil
+;         (nil? (cdr body)) (car body)
+;         (cons do body)
+; )))))
+; (defracro defn (name args) (eval (defn-core 'name 'args 'rest-args)))
 
-(defnrec map (f l)
-  (cond
-    (nil? l) nil
-    (cons (f (car l)) (map f (cdr l)))
-))
+; (defn fix (func) (func func))
 
-(defn init (length func) (map func (range 0 (- length 1))))
+; (def fix-recursive-body (fix (lambda (self name body start?) (do
+;   (cond
+;     (nil? body) nil
+;     (list? (car body))
+;       (cons (self self name (car body) true) (self self name (cdr body) false))
+;     (and start? (= name (car body)))
+;       (cons name (cons name (self self name (cdr body) false)))
+;     (cons (car body) (self self name (cdr body) false))
+; )))))
 
-(defnrec filter (f l)
-  (cond
-    (nil? l) nil
-    (do
-      (def rest (filter f (cdr l)))
-      (cond
-        (f (car l)) (cons (car l) rest)
-        rest
-))))
+; (def defnrec-core (lambda (name args body)
+;   (list def name
+;     (list fix
+;       (list lambda args
+;         (cond
+;           (nil? body) nil
+;           (nil? (cdr body)) (car body)
+;           (cons do body)
+; ))))))
+; (defracro defnrec (name args) (eval (defnrec-core 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args true))))
 
-(defnrec fold-left (f acc l)
-  (cond
-    (nil? l) acc
-    (fold-left f (f acc (car l)) (cdr l))
-))
+; (defn min (a b) (cond (< a b) a b))
+; (defn max (a b) (cond (> a b) a b))
 
-(def rev (fold-left (lambda (acc x) (cons x acc)) nil))
+; (def benchmark (dambda (label f)
+;   (do
+;     (def benchmark-start-time (current-time))
+;     (eval f)
+;     (def time-taken-s (- (current-time) benchmark-start-time))
+;     (def time-taken-real (cond (>= time-taken-s 1.0) time-taken-s (* time-taken-s 1000.0)))
+;     (def time-taken-unit (cond (>= time-taken-s 1.0) "s" "ms"))
+;     (print "Benchmark" label "took" time-taken-real time-taken-unit)
+; )))
 
-(defnrec merge (a b)
-  (cond
-    (nil? a) b
-    (nil? b) a
-    (< (car a) (car b)) (cons (car a) (merge (cdr a) b))
-    (cons (car b) (merge a (cdr b)))
-))
+; (defnrec range (from to) (cond (> from to) nil (cons from (range (+ 1 from) to))))
 
-(defnrec merge-sort (l)
-  (cond
-    (nil? l) nil
-    (nil? (cdr l)) l
-    (do
-      (def
-        half-len (/ (length l) 2)
-        lh (take l half-len)
-        rh (drop l half-len))
-      (merge (merge-sort lh) (merge-sort rh))
-)))
+; (defnrec take (l cnt)
+;   (cond
+;     (<= cnt 0) nil
+;     (nil? l) nil
+;     (cons (car l) (take (cdr l) (- cnt 1)))
+; ))
+
+; (defnrec drop (l cnt)
+;   (cond
+;     (<= cnt 0) l
+;     (nil? l) nil
+;     (drop (cdr l) (- cnt 1))
+; ))
+
+; (defnrec length (l)
+;   (cond
+;     (nil? l) 0
+;     (+ 1 (length (cdr l)))
+; ))
+
+; (defnrec contains? (elem l)
+;   (cond
+;     (nil? l) false
+;     (= elem (car l)) true
+;     (contains? elem (cdr l))
+; ))
+
+; (defnrec iter (f l)
+;   (cond
+;     (nil? l) nil
+;     (do (f (car l)) (iter f (cdr l)))
+; ))
+
+; (defnrec map (f l)
+;   (cond
+;     (nil? l) nil
+;     (cons (f (car l)) (map f (cdr l)))
+; ))
+
+; (defn init (length func) (map func (range 0 (- length 1))))
+
+; (defnrec filter (f l)
+;   (cond
+;     (nil? l) nil
+;     (do
+;       (def rest (filter f (cdr l)))
+;       (cond
+;         (f (car l)) (cons (car l) rest)
+;         rest
+; ))))
+
+; (defnrec fold-left (f acc l)
+;   (cond
+;     (nil? l) acc
+;     (fold-left f (f acc (car l)) (cdr l))
+; ))
+
+; (def rev (fold-left (lambda (acc x) (cons x acc)) nil))
+
+; (defnrec merge (a b)
+;   (cond
+;     (nil? a) b
+;     (nil? b) a
+;     (< (car a) (car b)) (cons (car a) (merge (cdr a) b))
+;     (cons (car b) (merge a (cdr b)))
+; ))
+
+; (defnrec merge-sort (l)
+;   (cond
+;     (nil? l) nil
+;     (nil? (cdr l)) l
+;     (do
+;       (def
+;         half-len (/ (length l) 2)
+;         lh (take l half-len)
+;         rh (drop l half-len))
+;       (merge (merge-sort lh) (merge-sort rh))
+; )))
