@@ -1,4 +1,3 @@
-# TODO homwork make some list functions like map filter take etc
 import lst
 import enums
 import ast
@@ -272,6 +271,13 @@ def eval(value, env):
                 raise ValueError("Expected cons list, got " + ast.show_ast(dambda_args[0]) + " in:\n" + ast.show_ast(value))
 
             return ldambda.Macro(dambda_args[0], dambda_args[1])
+
+        elif head == enums.SF.PANIC:
+            arg = eval(get_args(tail, 1, repr(value)), env)
+            raise ValueError(repr(arg))
+
+        elif head == enums.SF.PYTHON:
+            return True
 
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
