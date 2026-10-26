@@ -112,8 +112,8 @@
     (nil? a) b
     (cons (car a) (append (cdr a) b))))
 
-(defn min (a b) (cond (< a b) a b))
-(defn max (a b) (cond (> a b) a b))
+; (defn min (a b) (cond (< a b) a b))
+; (defn max (a b) (cond (> a b) a b))
 
 (defn inc (a) (+ a 1))
 
