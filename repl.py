@@ -13,7 +13,7 @@ def read_file(filename):
         return f"file not found: {filename}", False
 
 
-def read(env):
+def read(e):
     cmd = input(">>> ")
 
     if len(cmd) == 0 or cmd[0] != ':':
@@ -35,10 +35,10 @@ def evaluate(text, e, is_file):
             x, text = parser.parse(text)
             text = parser.strip_left(text)
 
-            x = eval.macroexpand(x)
-            print("macroexpand:")
-            print(ast.show_ast(x))
-            x = eval.eval(x, env.env)
+            # x = eval.macroexpand(x)
+            # print("macroexpand:")
+            # print(ast.show_ast(x))
+            x = eval.eval(x, env.runtime_env)
             out = ast.show_ast(x)
             if not is_file:
                 print(out)

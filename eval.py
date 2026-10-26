@@ -80,21 +80,21 @@ def get_args(values, count, desc):
     return out
 
 
-def racroexpand(env, value):
+def racroexpand(e, value):
     if symbol.is_symbol(value):
         try:
-            return env.get(value)
+            return e.get(value)
         except ValueError:
             return value
     elif lst.is_cons_list(value):
-        return lst.nil if lst.is_nil(value) else lst.cons(racroexpand(env, lst.car(value)), racroexpand(env, lst.cdr(value)))
+        return lst.nil if lst.is_nil(value) else lst.cons(racroexpand(e, lst.car(value)), racroexpand(e, lst.cdr(value)))
     else:
         return value
 
 
-def eval(value, env):
+def eval(value, e):
     if symbol.is_symbol(value):
-        return env.get(value)
+        return e.get(value)
 
     if not lst.is_cons_list(value):
         return value
@@ -102,12 +102,12 @@ def eval(value, env):
     if lst.is_nil(value):
         return value
 
-    head = eval(lst.car(value), env)
+    head = eval(lst.car(value), e)
 
     if isinstance(head, enums.OP):
-        return fold_op(head, lst.cdr(value), env)
+        return fold_op(head, lst.cdr(value), e)
     elif isinstance(head, enums.PR):
-        return fold_pr(head, lst.cdr(value), env)
+        return fold_pr(head, lst.cdr(value), e)
     elif isinstance(head, enums.SF):
         tail = lst.cdr(value)
 
@@ -115,7 +115,7 @@ def eval(value, env):
             return get_args(tail, 1, repr(value))[0]
 
         elif head == enums.SF.TYPEOF:
-            arg = eval(get_args(tail, 1, repr(value))[0], env)
+            arg = eval(get_args(tail, 1, repr(value))[0], e)
 
             if lst.is_cons_list(arg):
                 return "list"
@@ -126,8 +126,8 @@ def eval(value, env):
 
         elif head == enums.SF.CONS:
             dambda_args = get_args(tail, 2, repr(value))
-            dambda_args[0] = eval(dambda_args[0], env)
-            dambda_args[1] = eval(dambda_args[1], env)
+            dambda_args[0] = eval(dambda_args[0], e)
+            dambda_args[1] = eval(dambda_args[1], e)
 
             if not lst.is_cons_list(dambda_args[1]):
                 raise ValueError("expected cons list, got " + ast.show_ast(dambda_args[1]) + " in:\n" + ast.show_ast(value))
@@ -135,7 +135,7 @@ def eval(value, env):
             return lst.cons(dambda_args[0], dambda_args[1])
 
         elif head == enums.SF.CAR:
-            arg = eval(get_args(tail, 1, repr(value))[0], env)
+            arg = eval(get_args(tail, 1, repr(value))[0], e)
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
@@ -148,7 +148,7 @@ def eval(value, env):
             return lst.car(arg)
 
         elif head == enums.SF.CDR:
-            arg = eval(get_args(tail, 1, repr(value))[0], env)
+            arg = eval(get_args(tail, 1, repr(value))[0], e)
 
             if not lst.is_cons_list(arg):
                 if settings.settings.implicit_list_interface:
@@ -163,7 +163,7 @@ def eval(value, env):
         elif head == enums.SF.COND:
             # TODO maybe raise if 1 argument
             while not lst.is_nil(tail):
-                var_sym = eval(lst.car(tail), env)
+                var_sym = eval(lst.car(tail), e)
                 tail = lst.cdr(tail)
 
                 if lst.is_nil(tail):
@@ -173,7 +173,7 @@ def eval(value, env):
                     raise ValueError("expected bool, got " + ast.show_ast(var_sym) + " in:\n" + ast.show_ast(value))
 
                 if var_sym:
-                    return eval(lst.car(tail), env)
+                    return eval(lst.car(tail), e)
                 else:
                     tail = lst.cdr(tail)
 
@@ -181,18 +181,18 @@ def eval(value, env):
             return lst.nil
 
         elif head == enums.SF.EVAL:
-            arg = eval(get_args(tail, 1, repr(value))[0], env)
-            return eval(arg, env)
+            arg = eval(get_args(tail, 1, repr(value))[0], e)
+            return eval(arg, e)
 
         elif head == enums.SF.SYMBOL:
-            arg = eval(get_args(tail, 1, repr(value))[0], env)
-            return symbol.symbol(repr(arg), env)
+            arg = eval(get_args(tail, 1, repr(value))[0], e)
+            return symbol.symbol(repr(arg))
 
         elif head == enums.SF.DO:
             out = lst.nil
 
             while not lst.is_nil(tail):
-                out = eval(lst.car(tail), env)
+                out = eval(lst.car(tail), e)
                 tail = lst.cdr(tail)
 
             return out
@@ -201,7 +201,7 @@ def eval(value, env):
             out = []
 
             while not lst.is_nil(tail):
-                out.append(repr(eval(lst.car(tail), env)))
+                out.append(repr(eval(lst.car(tail), e)))
                 tail = lst.cdr(tail)
 
             print(" ".join(out))
@@ -211,7 +211,7 @@ def eval(value, env):
             out = []
 
             while not lst.is_nil(tail):
-                out.append(repr(eval(lst.car(tail), env)))
+                out.append(repr(eval(lst.car(tail), e)))
                 tail = lst.cdr(tail)
 
             user_input = input(" ".join(out) + "\n")
@@ -228,7 +228,7 @@ def eval(value, env):
                 if lst.is_nil(tail):
                     raise ValueError("expected even number of arguments to def:\n" + ast.show_ast(value))
 
-                env.define(var_sym, eval(lst.car(tail), env))
+                e.define(var_sym, eval(lst.car(tail), e))
 
                 tail = lst.cdr(tail)
 
@@ -244,7 +244,7 @@ def eval(value, env):
                 if lst.is_nil(tail):
                     raise ValueError("expected even number of arguments to set:\n" + ast.show_ast(value))
 
-                env.set(var_sym, eval(lst.car(tail), env))
+                e.set(var_sym, eval(lst.car(tail), e))
 
                 tail = lst.cdr(tail)
 
@@ -256,7 +256,7 @@ def eval(value, env):
             if not lst.is_cons_list(dambda_args[0]):
                 raise ValueError("Expected cons list, got " + ast.show_ast(dambda_args[0]) + " in:\n" + ast.show_ast(value))
 
-            return ldambda.Lambda(dambda_args[0], dambda_args[1], env)
+            return ldambda.Lambda(dambda_args[0], dambda_args[1], e)
 
         elif head == enums.SF.DAMBDA:
             dambda_args = get_args(tail, 2, repr(value))
@@ -275,7 +275,7 @@ def eval(value, env):
             return ldambda.Racro(dambda_args[0], dambda_args[1])
 
         elif head == enums.SF.PANIC:
-            arg = eval(get_args(tail, 1, repr(value)), env)
+            arg = eval(get_args(tail, 1, repr(value)), e)
             raise ValueError(repr(arg))
 
         elif head == enums.SF.PYTHON:
@@ -286,13 +286,10 @@ def eval(value, env):
 
         elif head == enums.SF.DEFMACRO:
             args = get_args(tail, 3, repr(value))
-            v = ldambda.Lambda(args[1], args[2], env)
+            v = ldambda.Lambda(args[1], args[2], e)
             environ.macro_env.define(args[0], v)
 
             return lst.nil
-
-        elif head == enums.SF.MACROEXPAND:
-            return macroexpand(tail)
 
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
@@ -300,9 +297,10 @@ def eval(value, env):
         lambda_args = head.args
         while True:
             if lst.is_nil(lambda_args):
+                # TODO map_list
                 out = []
                 while not lst.is_nil(tail):
-                    out.append(eval(lst.car(tail), env))
+                    out.append(eval(lst.car(tail), e))
                     tail = lst.cdr(tail)
 
                 cons_out = lst.nil
@@ -313,7 +311,7 @@ def eval(value, env):
             elif lst.is_nil(tail):
                 return ldambda.Lambda(lambda_args, head.body, new_env)
 
-            arg = eval(lst.car(tail), env)
+            arg = eval(lst.car(tail), e)
             sym = lst.car(lambda_args)
 
             new_env.define(sym, arg)
@@ -324,14 +322,15 @@ def eval(value, env):
         return eval(head.body, new_env)
 
     elif isinstance(head, ldambda.Dambda):
-        new_env = environ.Env(env)
+        new_env = environ.Env(e)
         tail = lst.cdr(value)
         dambda_args = head.args
         while True:
             if lst.is_nil(dambda_args):
+                # TODO map_list
                 out = []
                 while not lst.is_nil(tail):
-                    out.append(eval(lst.car(tail), env))
+                    out.append(eval(lst.car(tail), e))
                     tail = lst.cdr(tail)
 
                 cons_out = lst.nil
@@ -342,7 +341,7 @@ def eval(value, env):
             elif lst.is_nil(tail):
                 raise ValueError("Dambda partial application not allowed in:\n" + ast.show_ast(value))
 
-            arg = eval(lst.car(tail), env)
+            arg = eval(lst.car(tail), e)
             sym = lst.car(dambda_args)
 
             new_env.define(sym, arg)
@@ -368,52 +367,50 @@ def eval(value, env):
             tail = lst.cdr(tail)
             racro_args = lst.cdr(racro_args)
 
-        return eval(racroexpand(new_env, head.body), env)
+        return eval(racroexpand(new_env, head.body), e)
 
     else:
         raise ValueError("head not callable:\n" + ast.show_ast(head) + "\nin:\n" + ast.show_ast(value))
 
 
+# TODO
+def map_list(f, l):
+    return lst.nil if lst.is_nil(l) else lst.cons(f(lst.car(l)), map_list(f, lst.cdr(l)))
+
+
 def macroexpand(value):
-    # print(ast.show_ast(value))
     if lst.is_cons_list(value):
         if lst.is_nil(value):
             return lst.nil
+
+        l = None
+        h = lst.car(value)
+        if symbol.is_symbol(h):
+            try:
+                z = environ.macro_env.get(h)
+                if isinstance(z, ldambda.Lambda):
+                    l = z
+            except Exception:
+                ...
+
+        if not (l is None):
+            tail = lst.cdr(value)
+            new_env = environ.Env(environ.runtime_env)
+            macro_args = l.args
+            while True:
+                if lst.is_nil(macro_args):
+                    new_env.define(REST_ARGS, map_list(macroexpand, tail))
+                    break
+                elif lst.is_nil(tail):
+                    raise ValueError("cant partially apply macro:\n" + ast.show_ast(value))
+
+                new_env.define(lst.car(macro_args), macroexpand(lst.car(tail)))
+
+                tail = lst.cdr(tail)
+                macro_args = lst.cdr(macro_args)
+
+            return macroexpand(eval(l.body, new_env))
         else:
-            l = None
-            h = lst.car(value)
-            if symbol.is_symbol(h):
-                try:
-                    z = environ.macro_env.get(h)
-                    if isinstance(z, ldambda.Lambda):
-                        l = z
-                except Exception:
-                    ...
-
-            if not (l is None):
-                tail = lst.cdr(value)
-                new_env = environ.Env(environ.env)
-                new_env.define(h, l)
-                l.env.define(h, l)
-                # print(ast.show_ast(new_env.get(h)))
-                macro_args = l.args
-                while True:
-                    if lst.is_nil(macro_args):
-                        new_env.define(REST_ARGS, tail)
-                        break
-                    elif lst.is_nil(tail):
-                        raise ValueError("cant partially apply macro TODO")
-
-                    new_env.define(lst.car(macro_args), lst.car(tail))
-
-                    tail = lst.cdr(tail)
-                    macro_args = lst.cdr(macro_args)
-
-                # print("lbody")
-                # print(ast.show_ast(l.body))
-                print(new_env.values.keys())
-                return macroexpand(eval(l.body, new_env))
-            else:
-                return lst.cons(macroexpand(h), macroexpand(lst.cdr(value)))
+            return map_list(macroexpand, value)
     else:
         return value

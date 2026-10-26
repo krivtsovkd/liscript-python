@@ -1,4 +1,5 @@
 import symbol
+import ast
 from settings import settings
 
 
@@ -39,6 +40,12 @@ class Env:
         #     raise ValueError("Cant mutate value: " + symbol.name(sym))
         # self.values[symbol.name(sym)] = val
 
+    def print(self):
+        print("env:")
+        for k in self.values.keys():
+            print(k, ":", ast.show_ast(self.values[k]))
+        print()
 
-env = Env(None)
+
+runtime_env = Env(None)
 macro_env = Env(None)
