@@ -1,4 +1,4 @@
-(defn test (expected test-val) (cond (= expected test-val) () (error (++ "Test failed: " expected " != " test-val))))
+(defn test (expected test-val) (cond (= expected test-val) nil (error (++ "Test failed: " expected " != " test-val))))
 
 (def fib (fix (lambda (self n)
   (cond
@@ -72,3 +72,5 @@
 (test false (any (lambda (a) true) nil))
 (test false (any (lambda (n) (= 0 (% n 2))) '(1 3 5)))
 (test true (any (lambda (n) (= 0 (% n 2))) (range 1 5)))
+
+"Tests passed!"

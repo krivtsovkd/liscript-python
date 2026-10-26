@@ -97,7 +97,7 @@
       (cons name (cons name (self self name (cdr body) false)))
     (cons (car body) (self self name (cdr body) false)))))))
 
-(def defnrec-core (lambda (name args body)
+(def defnrec-codegen (lambda (name args body)
   (list def name
     (list fix
       (list lambda args
@@ -105,7 +105,7 @@
           (nil? body) nil
           (nil? (cdr body)) (car body)
           (cons do body)))))))
-(defracro defnrec (name args) (eval (defnrec-core 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args true))))
+(defracro defnrec (name args) (eval (defnrec-codegen 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args true))))
 
 (defn append (a b)
   (cond

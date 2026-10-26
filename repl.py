@@ -31,10 +31,15 @@ def evaluate(text, e, is_file):
     out = None
 
     while text:
+        x = ()
         try:
             x, text = parser.parse(text)
             text = parser.strip_left(text)
+        except ValueError as err:
+            print("Parser Error:", err)
+            break
 
+        try:
             # x = eval.macroexpand(x)
             # print("macroexpand:")
             # print(ast.show_ast(x))
@@ -43,7 +48,7 @@ def evaluate(text, e, is_file):
             if not is_file:
                 print(out)
         except ValueError as err:
-            print("Error:", err)
+            print("Eval Error:", err)
 
     if is_file and not (out is None):
         print(out)
