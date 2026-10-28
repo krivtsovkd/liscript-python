@@ -5,6 +5,12 @@
     (<= n 1) n
     (+ (self self (- n 1)) (self self (- n 2)))))))
 
+(test 1.5 (+ 1 0.5))
+(test 1 (/ 3 2))
+(test 1.5 (/ 3 2.0))
+(test 1.5 (/ 3.0 2))
+(test 1.0 (- 1 0.0))
+
 (test true (not false))
 (test false (not true))
 
