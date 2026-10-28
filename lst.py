@@ -38,6 +38,7 @@ def cdr(list):
     return list[1]
 
 
+# lambda impl start
 # def is_cons_list(val):
 #     return callable(val)
 

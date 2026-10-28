@@ -276,7 +276,7 @@ def eval(value, e):
 
         elif head == enums.SF.PANIC:
             arg = eval(get_args(tail, 1, repr(value)), e)
-            raise ValueError(repr(arg))
+            raise ValueError(ast.show_ast(arg))
 
         elif head == enums.SF.PYTHON:
             return True

@@ -7,8 +7,6 @@ import ldambda
 def show_ast(ast):
     if type(ast) is bool:
         return "true" if ast else "false"
-    elif ast in enums.ValuesToString:
-        return enums.ValuesToString[ast]
     elif symbol.is_symbol(ast):
         return str(symbol.name(ast))
     elif type(ast) is str:
@@ -25,6 +23,11 @@ def show_ast(ast):
 
         out += ")"
         return out
+    elif type(ast) is list:
+        print("TODO this should never happen")
+        print(ast)
+    elif ast in enums.ValuesToString:
+        return enums.ValuesToString[ast]
     elif isinstance(ast, ldambda.Lambda):
         return f"({enums.ValuesToString[enums.SF.LAMBDA]} {show_ast(ast.args)} {show_ast(ast.body)})"
     elif isinstance(ast, ldambda.Dambda):
