@@ -43,7 +43,7 @@ def evaluate(text, e, is_file):
             # x = eval.macroexpand(x)
             # print("macroexpand:")
             # print(ast.show_ast(x))
-            x = eval.eval(x, env.runtime_env)
+            x = eval.eval(x, env.runtime_env, False)
             out = ast.show_ast(x)
             if not is_file:
                 print(out)

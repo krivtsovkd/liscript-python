@@ -124,7 +124,11 @@
     (= i 0) (car l)
     (list-ref (- i 1) (cdr l))))
 
-(defnrec range (from to) (cond (> from to) nil (cons from (range (+ 1 from) to))))
+(defnrec range-impl (acc from to)
+  (cond
+    (> from to) acc
+    (range-impl (cons to acc) from (- to 1))))
+(def range (range-impl nil))
 
 (defnrec take (n l)
   (cond
@@ -138,12 +142,6 @@
     (nil? l) nil
     (drop (- n 1) (cdr l))))
 
-(defnrec contains? (elem l)
-  (cond
-    (nil? l) false
-    (= elem (car l)) true
-    (contains? elem (cdr l))))
-
 (defnrec iter (f l)
   (cond
     (nil? l) nil
@@ -154,12 +152,25 @@
     (nil? l) nil
     (cons (f (car l)) (map f (cdr l)))))
 
+(defnrec map-reverse-impl (acc f l)
+  (cond
+    (nil? l) acc
+    (map-reverse-impl (cons (f (car l)) acc) f (cdr l))))
+(def map-reverse (map-reverse-impl nil))
+
 (defn init (length func) (map func (range 0 (- length 1))))
 
-(defnrec repeat (len e)
+(defnrec zip-with (f xs ys)
   (cond
-    (<= len 0) nil
-    (cons e (repeat (- len 1) e))))
+    (nil? xs) nil
+    (nil? ys) nil
+    (cons (f (car xs) (car ys)) (zip-with f (cdr xs) (cdr ys)))))
+
+(defnrec repeat-impl (acc len e)
+  (cond
+    (<= len 0) acc
+    (repeat-impl (cons e acc) (- len 1) e)))
+(def repeat (repeat-impl nil))
 
 (defnrec filter (f l)
   (cond
@@ -191,6 +202,8 @@
 (def length (reduce (lambda (acc e) (+ 1 acc)) 0))
 (def reverse (reduce (lambda (acc x) (cons x acc)) nil))
 
+(defn map-tco (f l) (reverse (map-reverse f l)))
+
 (defnrec all (f l)
   (cond
     (nil? l) true
@@ -202,6 +215,14 @@
     (nil? l) false
     (f (car l)) true
     (any f (cdr l))))
+
+(defn contains? (elem l) (any (lambda (e) (= e elem)) l))
+
+(defnrec distinct (xs)
+  (cond
+    (nil? xs) nil
+    (contains? (car xs) (cdr xs)) (distinct (cdr xs))
+    (cons (car xs) (distinct (cdr xs)))))
 
 (defnrec merge (a b)
   (cond

@@ -38,10 +38,9 @@
 (test '(1 1 2 3 5 8 13 21 34 55) (map fib (range 1 10)))
 (test '(true false true) (map not '(false true false)))
 
-; (test true (contains? 4 (range 1 10)))
-; (test false (contains? 10 (range 100 200)))
-; (test false (contains? "vasya" nil))
-; (test true (contains? "vasya" '("vasya" "petya" "vatya" "petya")))
+(test (map (lambda (n) (* 2 n)) (range 1 10)) (zip-with + (range 1 10) (range 1 10)))
+(test nil (zip-with + nil (range 1 10)))
+(test '((2 3 4) (3 1) ((1 2) (1 2 3))) (zip-with map (list inc length (range 1)) '((1 2 3) ((1 2 3) (-4.0)) (2 3))))
 
 ; (test '(1 2 3) (init 3 (lambda (n) (+ n 1))))
 ; (test nil (init 0 (lambda (n) n)))
@@ -84,6 +83,15 @@
 (test false (any (lambda (a) true) nil))
 (test false (any (lambda (n) (= 0 (% n 2))) '(1 3 5)))
 (test true (any (lambda (n) (= 0 (% n 2))) (range 1 5)))
+
+(test true (contains? 4 (range 1 10)))
+(test false (contains? 10 (range 100 200)))
+(test false (contains? "vasya" nil))
+(test true (contains? "vasya" '("vasya" "petya" "vatya" "petya")))
+
+(test (range 1 10) (distinct (range 1 10)))
+(test nil (distinct nil))
+(test '(1) (distinct (repeat 10 1)))
 
 (test '(2 3 (4 5 6) 7) (deep-map inc '(1 2 (3 4 5) 6)))
 
