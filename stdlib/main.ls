@@ -60,10 +60,57 @@
 ;     (+= a 1)
 ;     (print a k)))
 
-(def i 0 sum 0)
-(while (< i 5)
-  (def j 0)
-  (while (< j 5) (+= sum j) (+= j 1))
-  (+= i 1))
+; (def i 0 sum 0)
+; (while (< i 5)
+;   (def j 0)
+;   (while (< j 5) (+= sum j) (+= j 1))
+;   (+= i 1))
 
-sum
+; sum
+
+; (def a 0)
+; (while (< a 5)
+;   (+= a 1)
+;   (def b 0)
+;   (while (< b 5)
+;     (print a b)
+;     (+= b 1))
+;   (print "--------"))
+
+
+
+
+
+
+
+
+
+
+
+; class Account:
+;     def __init__(self):
+;         self.value = 0
+
+;     def value(self):
+;         return self.value
+
+;     def withdraw(self, value):
+;         if (value > self.value):
+;             raise
+
+;         self.value -= value
+;         return self.value
+
+;     def add(self, value):
+;         self.value += value
+;         return self.value
+
+(defn account (value)
+  (defn add (v) (+= value v) value)
+
+  (defn withdraw (v)
+    (cond
+      (> v value) (error "ono")
+      (do (-= value v) value)))
+
+  (lambda (input) (eval input)))

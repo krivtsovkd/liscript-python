@@ -198,6 +198,10 @@
 ;     (cons (car a) (append (cdr a) b))))
 
 (defn append (a b) (foldr (lambda (acc v) (cons v acc)) b a))
+(defn append-reverse (a b)
+  (cond
+    (nil? a) b
+    (append-reverse (cdr a) (cons (car a) b))))
 
 (def length (reduce (lambda (acc e) (+ 1 acc)) 0))
 (def reverse (reduce (lambda (acc x) (cons x acc)) nil))
@@ -293,16 +297,21 @@
 ; end pattern matching
 
 (defracro += (name n) (set! name (+ name n)))
+(defracro -= (name n) (set! name (- name n)))
 
 (defn while-codegen (condition body)
   (list fix
-      (list lambda '(f)
+      (list lambda '(__f)
         (list cond condition
-          (list do
-            (cond
-              (nil? body) nil
-              (nil? (cdr body)) (car body)
-              (cons do body))
-          '(f f))
+          (append (cons do body) '((__f __f)))
         nil))))
 (defracro while (condition) (eval (while-codegen 'condition 'rest-args)))
+
+
+; (defn while-codegen (condition body)
+;   (list (list lambda nil
+;       (list do
+;         (list def 'while-recursive (list lambda nil
+;           (list cond condition (append (cons do body) '((while-recursive))) nil)))
+;       '(while-recursive)))))
+; (defracro while (condition) (eval (while-codegen 'condition 'rest-args)))
