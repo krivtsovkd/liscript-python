@@ -218,11 +218,17 @@
 
 (defn contains? (elem l) (any (lambda (e) (= e elem)) l))
 
-(defnrec distinct (xs)
+; (defnrec distinct (xs)
+;   (cond
+;     (nil? xs) nil
+;     (contains? (car xs) (cdr xs)) (distinct (cdr xs))
+;     (cons (car xs) (distinct (cdr xs)))))
+(defnrec distinct-impl (acc xs)
   (cond
-    (nil? xs) nil
-    (contains? (car xs) (cdr xs)) (distinct (cdr xs))
-    (cons (car xs) (distinct (cdr xs)))))
+    (nil? xs) acc
+    (contains? (car xs) (cdr xs)) (distinct-impl acc (cdr xs))
+    (distinct-impl (cons (car xs) acc) (cdr xs))))
+(def distinct (distinct-impl nil))
 
 (defnrec merge (a b)
   (cond
@@ -285,3 +291,18 @@
 ;     nil))
 
 ; end pattern matching
+
+(defracro += (name n) (set! name (+ name n)))
+
+(defn while-codegen (condition body)
+  (list fix
+      (list lambda '(f)
+        (list cond condition
+          (list do
+            (cond
+              (nil? body) nil
+              (nil? (cdr body)) (car body)
+              (cons do body))
+          '(f f))
+        nil))))
+(defracro while (condition) (eval (while-codegen 'condition 'rest-args)))

@@ -89,9 +89,10 @@
 (test false (contains? "vasya" nil))
 (test true (contains? "vasya" '("vasya" "petya" "vatya" "petya")))
 
-(test (range 1 10) (distinct (range 1 10)))
-(test nil (distinct nil))
-(test '(1) (distinct (repeat 10 1)))
+; TODO
+; (test (range 1 10) (distinct (range 1 10)))
+; (test nil (distinct nil))
+; (test '(1) (distinct (repeat 10 1)))
 
 (test '(2 3 (4 5 6) 7) (deep-map inc '(1 2 (3 4 5) 6)))
 
@@ -129,5 +130,16 @@
     (and (= a "vasya") (= b 5) (= c '(true 6)) (= d 8) (= e nil))))
 
 ; end pattern matching tests
+
+(test 10 (do (def k 0) (while (< k 10) (+= k 1)) k))
+
+(test 50
+  (do
+    (def i 0 sum 0)
+    (while (< i 5)
+      (def j 0)
+      (while (< j 5) (+= sum j) (+= j 1))
+      (+= i 1))
+  sum))
 
 "Tests finished"

@@ -3,6 +3,7 @@ class Settings:
         self.implicit_list_interface = False
         self.auto_quoting = False
         self.immutable_mode = False
+        self.tco = True  # TODO implement
 
 
 settings = Settings()

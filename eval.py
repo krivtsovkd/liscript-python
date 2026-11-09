@@ -1,3 +1,4 @@
+# TODO make strict th edefault
 import time
 import lst
 import enums
@@ -281,6 +282,17 @@ def eval(value, e, is_lazy):
 
             return lst.nil
 
+        elif head == enums.SF.WHILE:
+            cond = lst.car(tail)
+            body = lst.cdr(tail)
+            while eval(cond, e, False):
+                t = body
+                while not lst.is_nil(t):
+                    eval(lst.car(t), e, False)
+                    t = lst.cdr(t)
+
+            return lst.nil
+
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
         tail = lst.cdr(value)
@@ -310,12 +322,10 @@ def eval(value, e, is_lazy):
             lambda_args = lst.cdr(lambda_args)
 
         out = ldambda.LazyCall(head.body, new_env)
-        if is_lazy:
-            return out
-        else:
+        if not is_lazy:
             while isinstance(out, ldambda.LazyCall):
                 out = eval(out.exp, out.env, True)
-            return out
+        return out
 
     elif isinstance(head, ldambda.Dambda):
         new_env = environ.Env(e)
