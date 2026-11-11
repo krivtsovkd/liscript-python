@@ -266,7 +266,7 @@ def eval(value, e, is_lazy):
             return ldambda.Racro(dambda_args[0], dambda_args[1])
 
         elif head == enums.SF.PANIC:
-            arg = eval(get_args(tail, 1, repr(value)), e, False)
+            arg = eval(get_args(tail, 1, repr(value))[0], e, False)
             raise ValueError(ast.show_ast(arg))
 
         elif head == enums.SF.PYTHON:

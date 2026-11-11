@@ -96,12 +96,12 @@
 (defracro defnrec (name args) (eval (defnrec-codegen 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args))))
 
 (defn not (b) (= false b))
-(defracro or () (eval (cons cond (intersperse true 'rest-args))))
 
 (defnrec and-codegen (l)
   (cond
     (nil? l) true
     (list cond (car l) (and-codegen (cdr l)) false)))
+
 (defracro and () (eval (and-codegen 'rest-args)))
 
 (defnrec intersperse (e l)
@@ -109,6 +109,8 @@
     (nil? l) nil
     (nil? (cdr l)) l
     (cons (car l) (cons e (intersperse e (cdr l))))))
+
+(defracro or () (eval (cons cond (intersperse true 'rest-args))))
 
 (defn inc (a) (+ a 1))
 
@@ -142,10 +144,10 @@
     (nil? l) nil
     (drop (- n 1) (cdr l))))
 
-(defnrec iter (f l)
-  (cond
-    (nil? l) nil
-    (do (f (car l)) (iter f (cdr l)))))
+; (defnrec iter (f l)
+;   (cond
+;     (nil? l) nil
+;     (do (f (car l)) (iter f (cdr l)))))
 
 (defnrec map (f l)
   (cond
@@ -158,7 +160,7 @@
     (map-reverse-impl (cons (f (car l)) acc) f (cdr l))))
 (def map-reverse (map-reverse-impl nil))
 
-(defn init (length func) (map func (range 0 (- length 1))))
+; (defn init (length func) (map func (range 0 (- length 1))))
 
 (defnrec zip-with (f xs ys)
   (cond
@@ -170,6 +172,7 @@
   (cond
     (<= len 0) acc
     (repeat-impl (cons e acc) (- len 1) e)))
+
 (def repeat (repeat-impl nil))
 
 (defnrec filter (f l)
@@ -180,6 +183,18 @@
       (cond
         (f (car l)) (cons (car l) rest)
         rest))))
+
+(defnrec filter-reverse-impl (acc f l)
+  (cond
+    (nil? l) acc
+    (filter-reverse-impl
+      (cond (f (car l)) (cons (car l) acc) acc)
+      f
+      (cdr l))))
+
+(def filter-reverse (filter-reverse-impl nil))
+
+(defn filter-tco (f l) (reverse (filter-reverse f l)))
 
 (defnrec reduce (f acc l)
   (cond
@@ -222,17 +237,21 @@
 
 (defn contains? (elem l) (any (lambda (e) (= e elem)) l))
 
-; (defnrec distinct (xs)
-;   (cond
-;     (nil? xs) nil
-;     (contains? (car xs) (cdr xs)) (distinct (cdr xs))
-;     (cons (car xs) (distinct (cdr xs)))))
-(defnrec distinct-impl (acc xs)
+(defnrec distinct (l)
   (cond
-    (nil? xs) acc
-    (contains? (car xs) (cdr xs)) (distinct-impl acc (cdr xs))
-    (distinct-impl (cons (car xs) acc) (cdr xs))))
-(def distinct (distinct-impl nil))
+    (nil? l) nil
+    (contains? (car l) (cdr l)) (distinct (cdr l))
+    (cons (car l) (distinct (cdr l)))))
+
+(defnrec distinct-reverse-impl (acc l)
+  (cond
+    (nil? l) acc
+    (contains? (car l) (cdr l)) (distinct-reverse-impl acc (cdr l))
+    (distinct-reverse-impl (cons (car l) acc) (cdr l))))
+
+(def distinct-reverse (distinct-reverse-impl nil))
+
+(defn distinct-tco (l) (reverse (distinct-reverse l)))
 
 (defnrec merge (a b)
   (cond

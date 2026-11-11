@@ -23,9 +23,9 @@ def show_ast(ast):
 
         out += ")"
         return out
-    elif type(ast) is list:
-        print("TODO this should never happen")
-        return show_ast(ast[0])
+    # elif type(ast) is list:
+    #     print("TODO this should never happen")
+    #     return show_ast(ast[0])
     elif ast in enums.ValuesToString:
         return enums.ValuesToString[ast]
     elif isinstance(ast, ldambda.Lambda):

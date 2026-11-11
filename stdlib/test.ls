@@ -14,6 +14,14 @@
 (test true (not false))
 (test false (not true))
 
+(test true (or true false))
+(test false (or false false))
+(test true (or true (error "or should be lazy")))
+
+(test false (and true false))
+(test true (and true true))
+(test false (and false (error "and should be lazy")))
+
 (test 2 (inc 1))
 
 (test '(1 2 3) (range 1 3))
