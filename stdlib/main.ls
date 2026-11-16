@@ -105,12 +105,52 @@
 ;         self.value += value
 ;         return self.value
 
-(defn account (value)
-  (defn add (v) (+= value v) value)
+; (defn account (value)
+;   (defn add (v) (+= value v) value)
 
-  (defn withdraw (v)
-    (cond
-      (> v value) (error "ono")
-      (do (-= value v) value)))
+;   (defn withdraw (v)
+;     (cond
+;       (> v value) (error "ono")
+;       (do (-= value v) value)))
 
-  (lambda (input) (eval input)))
+;   (lambda (input) (eval input)))
+
+
+
+
+; (defn account (balance)
+;   (defn add (value) (+= balance value) balance)
+;   (defn sub (value) (-= balance value) balance)
+
+;   (lambda (input) (eval input)))
+
+; (defn hash-map ()
+;   (defn dispatch (v) (eval v))
+;   (defn set (k v) (eval (list eval-in dispatch (list eval (list def k v)))))
+;   (defn get (k) (eval (list eval-in dispatch (list eval k))))
+
+;   dispatch)
+
+
+
+
+(defn id (x) x)
+
+(defn sum (cont n)
+  (cond
+    (<= n 0) (cont 0)
+    (sum (lambda (x) (cont (+ n x))) (- n 1))))
+
+(defn map-cps (cont f l)
+  (cond
+    (nil? l) (cont nil)
+    (map-cps (lambda (x) (cont (cons (f (car l)) x))) f (cdr l))))
+
+; cont = id
+; cont = (lambda (x) (cont (cons (f (car l)) x)))
+; cont = (lambda (x) ((^^^) (cons (f (car l)) x)))
+
+(defn foldr-cps (cont f a l)
+  (cond
+    (nil? l) (cont a)
+    (foldr-cps (lambda (x) (cont (f x (car l)))) f a (cdr l))))

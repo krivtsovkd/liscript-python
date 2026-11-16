@@ -293,6 +293,21 @@ def eval(value, e, is_lazy):
 
             return lst.nil
 
+        elif head == enums.SF.EVALIN:
+            # TODO error checking
+            eval_lambda = eval(lst.car(tail), e, False)
+            if not isinstance(eval_lambda, ldambda.Lambda):
+                raise ValueError("Expected lambda in evalin, got:\n" + ast.show_ast(eval_lambda))
+            special_e = eval_lambda.env
+            tail = lst.cdr(tail)
+            out = lst.nil
+
+            while not lst.is_nil(tail):
+                out = eval(lst.car(tail), special_e, is_lazy if lst.is_nil(lst.cdr(tail)) else False)
+                tail = lst.cdr(tail)
+
+            return out
+
     elif isinstance(head, ldambda.Lambda):
         new_env = environ.Env(head.env)
         tail = lst.cdr(value)

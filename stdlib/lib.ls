@@ -82,18 +82,27 @@
         (cons ((self self) f (car l)) ((self self) f (cdr l))))
     (f l)))))
 
-(defn fix-recursive-body (name body) (deep-map (lambda (e) (cond (= e name) (list e e) e)) body))
+; (defn fix-recursive-body (name body) (deep-map (lambda (e) (cond (= e name) (list e e) e)) body))
 
-(def defnrec-codegen (lambda (name args body)
+; (def defnrec-codegen (lambda (name args body)
+;   (list def name
+;     (list fix
+;       (list lambda args
+;         (cond
+;           (nil? body) nil
+;           (nil? (cdr body)) (car body)
+;           (cons do body)))))))
+
+; (defracro defnrec (name args) (eval (defnrec-codegen 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args))))
+
+(defn defnrec-codegen (name args body)
   (list def name
     (list fix
       (list lambda args
-        (cond
-          (nil? body) nil
-          (nil? (cdr body)) (car body)
-          (cons do body)))))))
+        (cons do
+          (cons (list def name (list name name)) body))))))
 
-(defracro defnrec (name args) (eval (defnrec-codegen 'name (cons 'name 'args) (fix-recursive-body 'name 'rest-args))))
+(defracro defnrec (name args) (eval (defnrec-codegen 'name (cons 'name 'args) 'rest-args)))
 
 (defn not (b) (= false b))
 
@@ -334,3 +343,8 @@
 ;           (list cond condition (append (cons do body) '((while-recursive))) nil)))
 ;       '(while-recursive)))))
 ; (defracro while (condition) (eval (while-codegen 'condition 'rest-args)))
+
+(defn when-codegen (condition body)
+    (list cond condition (cons do body)))
+
+(defracro when (condition) (eval (when-codegen 'condition 'rest-args)))
