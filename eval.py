@@ -401,6 +401,262 @@ def eval(value, e, is_lazy):
         raise ValueError("head not callable:\n" + ast.show_ast(head) + "\nin:\n" + ast.show_ast(value))
 
 
+class StackItem:
+    def __init__(self, evaled, unevaled, e):
+        self.evaled = evaled
+        self.unevaled = unevaled
+        self.e = e
+
+    def __repr__(self):
+        return "" + str(self.evaled) + " " + repr(self.unevaled)
+
+    # def __iter__(self):
+    #     yield self.evaled
+    #     yield self.unevaled
+
+
+def eval_iter(value, init_e, max_stack_size):
+    if symbol.is_symbol(value):
+        return init_e.get(value)
+
+    if not lst.is_cons_list(value):
+        return value
+
+    if lst.is_nil(value):
+        return value
+
+    stack = [StackItem([], value, init_e)]
+    while True:
+        max_stack_size[0] = max(max_stack_size[0], len(stack))
+        if not stack:
+            raise ValueError("empty stack")
+
+        # print(stack, len(stack), len(stack[-1].evaled), len(stack[-1].unevaled), end="\n\n\n\n")
+        # print(stack)
+
+        evaled = stack[-1].evaled
+        unevaled = stack[-1].unevaled
+        stack_e = stack[-1].e
+        if symbol.is_symbol(unevaled):
+            res = stack_e.get(unevaled)
+            stack.pop()
+
+            if not stack:
+                return res
+            else:
+                stack[-1].evaled.append(res)
+                continue
+
+        elif not lst.is_cons_list(unevaled):
+            res = unevaled
+            stack.pop()
+
+            if not stack:
+                return res
+            else:
+                stack[-1].evaled.append(res)
+                continue
+
+        elif lst.is_nil(unevaled) and not isinstance(evaled[0], ldambda.Lambda) and not isinstance(evaled[0], ldambda.Racro) and evaled[0] != enums.SF.EVAL:
+            res = apply(evaled, stack_e)
+            stack.pop()
+
+            if not stack:
+                return res
+            else:
+                stack[-1].evaled.append(res)
+                continue
+        else:
+            head = lst.car(unevaled)
+            stack[-1].unevaled = lst.cdr(unevaled)
+            evaled_head = evaled[0] if evaled else None
+
+            if evaled_head == enums.SF.QUOTE:
+                res = head
+            elif (evaled_head == enums.SF.DEF or evaled_head == enums.SF.SET) and len(evaled) % 2 == 1:
+                res = head
+            elif evaled_head == enums.SF.LAMBDA or evaled_head == enums.SF.DAMBDA or evaled_head == enums.SF.RACRO:
+                res = head
+            elif evaled_head == enums.SF.COND and (len(evaled) == 2 or lst.is_nil(lst.cdr(unevaled))):
+                # TODO check bool
+                cond_var = evaled[1] if len(evaled) >= 2 else None
+                if lst.is_nil(lst.cdr(unevaled)) or cond_var:
+                    stack.pop()
+                    if lst.is_cons_list(head):
+                        stack.append(StackItem([], head, stack_e))
+                        continue
+                    elif symbol.is_symbol(head):
+                        res = stack_e.get(head)
+                    else:
+                        res = head
+
+                    if not stack:
+                        return res
+                else:
+                    stack[-1].unevaled = lst.cdr(unevaled)
+                    stack[-1].evaled = evaled[:1]
+                    continue
+            elif evaled_head == enums.SF.EVAL and lst.is_nil(unevaled):
+                # TODO check evaled[1]
+                stack.pop()
+                if lst.is_cons_list(evaled[1]):
+                    stack.append(StackItem([], evaled[1], stack_e))
+                    continue
+                elif symbol.is_symbol(evaled[1]):
+                    res = stack_e.get(evaled[1])
+                else:
+                    res = evaled[1]
+
+                if not stack:
+                    return res
+            elif isinstance(evaled_head, ldambda.Lambda) and lst.is_nil(unevaled):
+                new_e = environ.Env(evaled_head.env)
+                tail_vec = evaled[1:]
+                lambda_args = evaled_head.args
+                big_break = False
+                while True:
+                    if lst.is_nil(lambda_args):
+                        rest_args = lst.nil
+                        for x in tail_vec[::-1]:
+                            rest_args = lst.cons(x, rest_args)
+                        new_e.define(REST_ARGS, rest_args)
+                        break
+                    elif not tail_vec:
+                        # TODO fix this
+                        res = ldambda.Lambda(lambda_args, evaled_head.body, new_e)
+                        stack.pop()
+                        stack[-1].evaled.append(res)
+                        big_break = True
+                        break
+
+                    new_e.define(lst.car(lambda_args), tail_vec[0])
+                    tail_vec = tail_vec[1:]
+                    lambda_args = lst.cdr(lambda_args)
+
+                if big_break:
+                    continue
+
+                stack.pop()
+                stack.append(StackItem([], evaled_head.body, new_e))
+                continue
+
+            elif isinstance(evaled_head, ldambda.Racro):
+                if not lst.is_nil(unevaled):
+                    res = head
+                else:
+                    new_e = environ.Env(None)
+                    tail_vec = evaled[1:]
+                    racro_args = evaled_head.args
+                    while True:
+                        if lst.is_nil(racro_args):
+                            rest_args = lst.nil
+                            for x in tail_vec[::-1]:
+                                rest_args = lst.cons(x, rest_args)
+                            new_e.define(REST_ARGS, rest_args)
+                            break
+                        elif not tail_vec:
+                            # TODO fix this
+                            raise ValueError("TODO")
+
+                        new_e.define(lst.car(racro_args), tail_vec[0])
+                        tail_vec = tail_vec[1:]
+                        racro_args = lst.cdr(racro_args)
+
+                    stack.pop()
+                    stack.append(StackItem([], racroexpand(new_e, evaled_head.body), stack_e))
+                    continue
+
+            elif lst.is_cons_list(head):
+                stack.append(StackItem([], head, stack_e))
+                continue
+            elif symbol.is_symbol(head):
+                res = stack_e.get(head)
+            else:
+                res = head
+
+            stack[-1].evaled.append(res)
+
+
+def apply(vec, e):
+    if not vec:
+        raise ValueError("cant apply empty vec")
+
+    head = vec[0]
+    if isinstance(head, enums.OP):
+        # TODO empty list
+        out = vec[1] if head != enums.OP.SConcat else repr(vec[1])
+        for x in vec[2:]:
+            out = Operations[head](out, x)
+        return out
+    elif isinstance(head, enums.PR):
+        if not vec:
+            return True
+
+        cur = vec[1]
+        for next in vec[2:]:
+            if not Predicates[head](cur, next):
+                return False
+            cur = next
+        return True
+
+    elif isinstance(head, enums.SF):
+        tail = vec[1:]
+        # TODO (def a 1 b (+ a 1))
+        if head == enums.SF.DEF:
+            while tail:
+                e.define(tail[0], tail[1])
+                tail = tail[2:]
+            return lst.nil
+        elif head == enums.SF.SET:
+            while tail:
+                e.set(tail[0], tail[1])
+                tail = tail[2:]
+            return lst.nil
+        elif head == enums.SF.QUOTE:
+            # TODO check tail length
+            return tail[0]
+        elif head == enums.SF.TYPEOF:
+            if lst.is_cons_list(tail[0]):
+                return "list"
+            elif symbol.is_symbol(tail[0]):
+                return "symbol"
+            else:
+                return type(tail[0]).__name__
+        elif head == enums.SF.CONS:
+            # TODO check tail length
+            return lst.cons(tail[0], tail[1])
+        elif head == enums.SF.CAR:
+            # TODO check tail length
+            return lst.car(tail[0])
+        elif head == enums.SF.CDR:
+            # TODO check tail length
+            return lst.cdr(tail[0])
+        # elif head == enums.SF.COND:
+        # elif head == enums.SF.EVAL:
+        elif head == enums.SF.PRINT:
+            for x in tail:
+                print(repr(x), end=" ")
+            print()
+        elif head == enums.SF.READ:
+            for x in tail:
+                print(repr(x), end=" ")
+            print()
+            user_input = input()
+            x, y = parser.parse(user_input)
+            return x
+        elif head == enums.SF.SYMBOL:
+            return symbol.symbol(repr(tail[0]))
+        elif head == enums.SF.DO:
+            return tail[-1]
+        elif head == enums.SF.LAMBDA:
+            return ldambda.Lambda(tail[0], tail[1], e)
+        elif head == enums.SF.DAMBDA:
+            return ldambda.Dambda(tail[0], tail[1])
+        elif head == enums.SF.RACRO:
+            return ldambda.Racro(tail[0], tail[1])
+        # TODO the rest of them
+
+
 # TODO
 def map_list(f, l):
     return lst.nil if lst.is_nil(l) else lst.cons(f(lst.car(l)), map_list(f, lst.cdr(l)))

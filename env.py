@@ -14,10 +14,11 @@ class Env:
         self.values[symbol.name(sym)] = val
 
     def get(self, sym):
+        sym_name = symbol.name(sym)
         cur = self
         while not (cur is None):
-            if symbol.name(sym) in cur.values:
-                return cur.values[symbol.name(sym)]
+            if sym_name in cur.values:
+                return cur.values[sym_name]
             cur = cur.parent
 
         if settings.auto_quoting:
@@ -27,10 +28,11 @@ class Env:
 
     # TODO setting
     def set(self, sym, val):
+        sym_name = symbol.name(sym)
         cur = self
         while not (cur is None):
-            if symbol.name(sym) in cur.values:
-                cur.values[symbol.name(sym)] = val
+            if sym_name in cur.values:
+                cur.values[sym_name] = val
                 return
             cur = cur.parent
 

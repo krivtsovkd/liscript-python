@@ -3,6 +3,7 @@ import ast
 import eval
 import readline
 import env
+import settings
 
 
 def read_file(filename):
@@ -43,7 +44,12 @@ def evaluate(text, e, is_file):
             # x = eval.macroexpand(x)
             # print("macroexpand:")
             # print(ast.show_ast(x))
-            x = eval.eval(x, env.runtime_env, False)
+            if settings.settings.eval_iter:
+                max_stack_size = [1]
+                x = eval.eval_iter(x, env.runtime_env, max_stack_size)
+                # print(max_stack_size[0])
+            else:
+                x = eval.eval(x, env.runtime_env, False)
             out = ast.show_ast(x)
             if not is_file:
                 print(out)
